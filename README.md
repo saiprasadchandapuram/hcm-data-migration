@@ -40,12 +40,12 @@ If this data had been loaded as-is, the go-live would have failed. Oracle reject
 |------------------------------|-----------|
 | Source records               | 300       |
 | Duplicates removed           | 9         |
-| Migration-ready (Clean)      | 276       |
-| Rejected (needs HR decision) | 15        |
-| Fixes and rejections logged  | 673       |
-| **Data Quality Score**       | **92.0%** |
+| Migration-ready (Clean)      | 260       |
+| Rejected (needs HR decision) | 31        |
+| Fixes and rejections logged  | 150       |
+| **Data Quality Score**       | **86.7%** |
 
-Check: 276 clean + 15 rejected + 9 duplicates = 300.
+Check: 260 clean + 31 rejected + 9 duplicates = 300.
 Data Quality Score = clean rows ÷ source records.
 
 Every exception was documented and traceable instead of being silently loaded.
