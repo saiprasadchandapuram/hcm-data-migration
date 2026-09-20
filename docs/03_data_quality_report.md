@@ -1,38 +1,34 @@
-# Data Quality Report – Legacy Employee Data Migration
+# Data Quality Report – Employee Data Migration
 
-**Project:** Oracle HCM Data Migration  
-**Source File:** `legacy_employee_data_messy.xlsx`  
-**Date:** 20-Sep-2026  
+**Project:** Employee Data Migration to Oracle Cloud HCM (synthetic data)
+**Prepared by:** Sai Prasad Chandapuram
 
 ---
 
 ## 1. Executive Summary
 
-We profiled **300** legacy employee records from the source Excel file.  
-**276** records were found to be migration-ready after automated cleaning.  
-**15** records were rejected and require business input before they can be migrated.
+We profiled **300** legacy employee records from the source Excel file.
+
+- **260** records are migration-ready after automated cleaning.
+- **31** records were rejected (blank employee ID, exit date before joining date, or missing joining date) and need business input before they can be migrated.
+- **9** duplicate records were removed.
+
+Data Quality Score: **86.7%**
 
 ---
 
 ## 2. Scope and Method
 
-| Item | Detail |
-|------|--------|
-| **Source** | `data/legacy_employee_data_messy.xlsx` (sheet: Employee Master) |
-| **Tool** | Python + pandas (custom cleaning script `02_clean.py`) |
-| **Checks performed** | Field-level cleansing, standardisation, format validation, cross-field consistency, duplicate detection |
-| **Output** | Clean data file + Error log + Rejected rows |
-
-**Key rules applied:**
-- Emp ID normalisation (EMP prefix, uniqueness)
-- Name splitting and title removal
-- Date parsing to YYYY-MM-DD
-- Gender → M / F
-- Employment Status → ACTIVE / INACTIVE
-- Department, Grade, Location standardisation (Value Mapping)
-- Email format validation
-- Phone → 10-digit clean number
-- Cross-field checks (Exit date vs Hire date, Active + Exit date conflict)
+- **Source file:** legacy_employee_data_messy.xlsx (16 columns, 300 rows, synthetic data)
+- **Tools:** Python, Pandas, Excel
+- **Steps:**
+  1. Profiled every column to find inconsistent values
+  2. Mapped each source column to an Oracle HCM field (see docs/02_field_mapping.xlsx)
+  3. Cleaned and standardised the data with a Python script
+  4. Applied cross-field checks and logged every fix and rejection
+- **Standardisation results:** all department, job, grade and location values were matched to the standard lists, with 0 unmatched values. Dates were converted to YYYY/MM/DD.
+- **Assumption to confirm with HR:** a blank grade was defaulted to GRADE_1.
+- **Known limitation:** rows with a missing joining date are rejected by the load filter but are not listed as separate items in the error log.
 
 ---
 
@@ -40,37 +36,38 @@ We profiled **300** legacy employee records from the source Excel file.
 
 | Issue | Rows Affected | Severity | Action Taken |
 |-------|---------------|----------|--------------|
-| Blank or invalid Emp ID | 8 | Critical | Row rejected |
-| Duplicate Emp ID | 5 | Critical | Duplicate rows removed (first occurrence kept) |
-| Exit date before Joining date | 12 | Critical | Row rejected – needs HR confirmation |
-| Active employee with Exit date | 7 | High | Flagged for HR review |
-| Missing Last Name | 9 | High | Row rejected |
-| Unrecognised date format | 15 | Medium | Date left blank |
-| Invalid / missing Gender | 11 | Medium | Left blank |
-| Department value not in standard list | 14 | Medium | Left as-is + logged |
-| Grade value not mapped | 6 | Low | Defaulted to GRADE_1 where blank |
-| Invalid Email format | 10 | Medium | Left blank |
-| Phone not 10 digits | 13 | Medium | Left blank |
-| Missing / non-numeric Salary | 4 | Low | Left blank |
+| Blank employee ID | 5 | Critical | Row rejected |
+| Duplicate employee ID | 9 | Critical | Row removed (first record kept) |
+| Exit date before joining date | 17 | Critical | Row rejected, needs HR confirmation |
+| Active employee with an exit date | 5 | High | Flagged for HR review |
+| Missing or non-numeric salary | 13 | High | Left blank |
+| Salary zero or negative | 8 | High | Left blank |
+| Missing EMP prefix on employee ID | 5 | Medium | Prefix added |
+| Last-name-first format | 11 | Medium | Reordered |
+| Blank email | 12 | Medium | Left blank |
+| Invalid email format | 11 | Medium | Left blank |
+| Blank gender | 25 | Medium | Left blank |
+| Blank grade | 13 | Medium | Defaulted to GRADE_1 |
+| Phone not exactly 10 digits | 16 | Medium | Left blank |
 
-> **Note:** Replace the numbers above with the real counts from your `error_log.xlsx`.
+Total fixes and rejections logged: **150**.
 
 ---
 
 ## 4. Critical Issues Needing Business Decision
 
-These records are **blocked from migration** until HR / business confirms the correct values:
+These records are blocked from migration until HR confirms the correct values:
 
-1. **12 rows** have an **Exit Date earlier than the Joining Date**.  
-   → HR must confirm the correct dates. These rows cannot be loaded as-is.
+1. **17** rows have an Exit Date earlier than the Joining Date.
+   → HR must confirm the correct dates. These rows are rejected.
 
-2. **7 rows** are marked **ACTIVE** but still have an **Exit Date**.  
+2. **5** rows are marked ACTIVE but still have an Exit Date.
    → HR must decide whether the employee is truly active or the status/date is wrong.
 
-3. **8 rows** have a **blank or invalid Emp ID**.  
-   → Business must provide a valid unique employee number.
+3. **5** rows have a blank Emp ID.
+   → Business must provide a valid unique employee number. These rows are rejected.
 
-4. **5 duplicate Emp IDs** were found.  
+4. **9** duplicate Emp IDs were found and removed (first record kept).
    → Confirm which record is the correct master record.
 
 Until these decisions are received, the affected rows remain in the Rejected set.
@@ -82,9 +79,10 @@ Until these decisions are received, the affected rows remain in the Rejected set
 | Metric                        | Value      |
 |-------------------------------|------------|
 | Total source records          | 300        |
-| Clean (migration-ready)       | 276        |
-| Rejected / blocked            | 15         |
-| **Data Quality Score**        | **92.0%**  |
+| Duplicates removed            | 9          |
+| Clean (migration-ready)       | 260        |
+| Rejected / blocked            | 31         |
+| **Data Quality Score**        | **86.7%**  |
 
 **Formula:** Clean rows ÷ Total rows × 100
 
@@ -92,24 +90,19 @@ Until these decisions are received, the affected rows remain in the Rejected set
 
 ## 6. Recommendations
 
-1. **Make Emp ID mandatory and unique** at the source system / Excel template.  
-2. **Standardise Department, Grade and Location** lists – provide a controlled drop-down to data entry users.  
-3. **Validate date entry** (Joining Date cannot be in the future; Exit Date must be after Joining Date).  
-4. **Enforce Gender** as M/F only.  
-5. **Add basic Email and Phone format checks** at the point of data entry.  
-6. **Run the cleaning script** as a mandatory pre-load step for every future data extract.  
-7. Maintain the **Value Mapping** sheet and keep it updated when new variants appear.
+- Make Emp ID mandatory and unique at the source
+- Use one standard list for Department, Job, Grade and Location
+- Validate dates at the point of entry
+- Do not allow an exit date before the joining date
+- Use a dropdown for Gender and Status
+- Run the cleansing script as a mandatory pre-load step for future extracts
 
 ---
 
 ## 7. Sign-off
 
-| Role | Name | Signature | Date |
-|------|------|-----------|------|
-| Prepared by | | | |
-| Reviewed by | | | |
-| Approved by | | | |
-
----
-
-*This report was generated as part of the Oracle HCM data migration readiness assessment.*
+| Role        | Name                         | Signature | Date |
+|-------------|------------------------------|-----------|------|
+| Prepared by | Sai Prasad Chandapuram       |           |      |
+| Reviewed by |                              |           |      |
+| Approved by |                              |           |      |
