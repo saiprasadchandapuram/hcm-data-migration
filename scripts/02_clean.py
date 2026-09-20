@@ -61,7 +61,7 @@ def parse_date(val, row, col):
         return ""
     for f in FORMATS:
         try:
-            return datetime.strptime(v, f).strftime("%Y-%m-%d")
+            return datetime.strptime(v, f).strftime("%Y/%m/%d")   # ← fixed format
         except ValueError:
             continue
     log(row, col, val, "Unrecognised date format", "Left blank")
@@ -186,7 +186,7 @@ def fix_location(r):
 
 df["LocationCode"] = df.apply(fix_location, axis=1)
 
-# ---------- 11. Designation (basic clean – expand later if needed) ----------
+# ---------- 11. Designation (basic clean) ----------
 def fix_designation(r):
     v = r["Designation"].strip()
     if v == "":
@@ -235,14 +235,14 @@ mask = (df["AssignmentStatus"] == "ACTIVE") & (df["TerminationDate"] != "")
 for _, r in df[mask].iterrows():
     log(r["_row"], "Exit Date", r["Exit Date"], "Active employee has an exit date", "Flagged for HR review")
 
-# Duplicates
-dupes = df[df.duplicated(subset=["PersonNumber"], keep="first")]
+# Duplicates (only check rows that actually have an Emp ID)
+has_id = df["PersonNumber"] != ""
+dupes = df[has_id & df.duplicated(subset=["PersonNumber"], keep="first")]
 for _, r in dupes.iterrows():
     log(r["_row"], "Emp ID", r["PersonNumber"], "Duplicate employee ID", "Row removed")
-df = df.drop_duplicates(subset=["PersonNumber"], keep="first")
+df = df.drop(dupes.index)
 
 # ---------- 15. Split into Clean vs Rejected and write files ----------
-import os
 os.makedirs("output", exist_ok=True)
 
 # A row is "clean" only if it has valid PersonNumber + HireDate + LastName

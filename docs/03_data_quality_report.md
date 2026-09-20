@@ -9,8 +9,8 @@
 ## 1. Executive Summary
 
 We profiled **300** legacy employee records from the source Excel file.  
-**247** records were found to be migration-ready after automated cleaning.  
-**53** records required correction, of which **18** could not be migrated without business input and have been blocked.
+**276** records were found to be migration-ready after automated cleaning.  
+**15** records were rejected and require business input before they can be migrated.
 
 ---
 
@@ -79,12 +79,12 @@ Until these decisions are received, the affected rows remain in the Rejected set
 
 ## 5. Data Quality Score
 
-| Metric | Value |
-|--------|-------|
-| Total source records | 300 |
-| Clean (migration-ready) | 247 |
-| Rejected / blocked | 53 |
-| **Data Quality Score** | **82.3%** |
+| Metric                        | Value      |
+|-------------------------------|------------|
+| Total source records          | 300        |
+| Clean (migration-ready)       | 276        |
+| Rejected / blocked            | 15         |
+| **Data Quality Score**        | **92.0%**  |
 
 **Formula:** Clean rows ÷ Total rows × 100
 
