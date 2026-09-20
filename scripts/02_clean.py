@@ -242,12 +242,38 @@ for _, r in dupes.iterrows():
     log(r["_row"], "Emp ID", r["PersonNumber"], "Duplicate employee ID", "Row removed")
 df = df.drop(dupes.index)
 
+# ---------- Re-map Department, Designation, Grade, Location using the Value Mapping sheet ----------
+vm = pd.read_excel("docs/02_field_mapping.xlsx", sheet_name="Value Mapping", dtype=str)
+lookup = {}
+for _, m in vm.iterrows():
+    for variant in re.findall(r"'([^']*)'", m.iloc[2]):
+        lookup[(m.iloc[0], variant.strip().lower())] = m.iloc[1]
+
+errors[:] = [x for x in errors if x["Issue"] != "No mapping found"]
+
+def remap(src_col, out_col, blank_default=""):
+    def f(r):
+        v = r[src_col].strip()
+        if v == "":
+            return blank_default
+        new = lookup.get((src_col, v.lower()))
+        if new is None:
+            log(r["_row"], src_col, r[src_col], "No mapping found", "Left blank")
+            return ""
+        return new
+    df[out_col] = df.apply(f, axis=1)
+
+remap("Department", "DepartmentName")
+remap("Designation", "JobName")
+remap("Grade", "GradeCode", blank_default="GRADE_1")
+remap("Work Place", "LocationCode")
+
 # ---------- 15. Split into Clean vs Rejected and write files ----------
 os.makedirs("output", exist_ok=True)
 
 # A row is "clean" only if it has valid PersonNumber + HireDate + LastName
-clean = df[(df["PersonNumber"] != "") & (df["HireDate"] != "") & (df["LastName"] != "")].copy()
-rejected = df[~df.index.isin(clean.index)].copy()
+clean = df[(df["PersonNumber"] != "") & (df["HireDate"] != "") & (df["LastName"] != "") & ~((df["TerminationDate"] != "") & (df["TerminationDate"] < df["HireDate"]))]
+rejected = df[~df.index.isin(clean.index)]
 
 cols = [
     "PersonNumber", "FirstName", "LastName", "Sex", "DateOfBirth", "HireDate",
