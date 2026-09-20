@@ -2,8 +2,10 @@
 
 ## Business Problem
 
-A company was moving **300 employee records** from Excel into Oracle Cloud HCM.  
+**Scenario (synthetic data):** A company is moving **300 employee records** from Excel into Oracle Cloud HCM. The records are fake and were created for this portfolio project. Nothing was loaded into a live Oracle system. The mapping and validation are prepared for Oracle HCM Data Loader (HDL).
+
 The legacy data had no validation:
+
 - Departments had multiple different spellings
 - Dates came in six different formats
 - Salaries were stored as text
@@ -17,7 +19,7 @@ If this data had been loaded as-is, the go-live would have failed. Oracle reject
 2. Created a **source-to-target field mapping** document with transformation and validation rules
 3. Built a **Python cleansing pipeline** that:
    - Standardised Emp ID, Name, Gender, Status, Department, Grade, Location
-   - Converted dates to Oracle format (YYYY-MM-DD)
+   - Converted dates to Oracle format (YYYY/MM/DD)
    - Cleaned Salary, Email and Phone
    - Applied cross-field validation (Exit Date vs Hire Date, Active status conflicts, duplicates)
 4. Produced three outputs:
@@ -34,23 +36,27 @@ If this data had been loaded as-is, the go-live would have failed. Oracle reject
 
 ## Results
 
-| Metric                  | Value     |
-|-------------------------|-----------|
-| Source records          | 300       |
-| Migration-ready (Clean) | 276       |
-| Rejected                | 15        |
-| Issues logged           | 673       |
-| **Data Quality Score**  | **92.0%** |
+| Metric                       | Value     |
+|------------------------------|-----------|
+| Source records               | 300       |
+| Duplicates removed           | 9         |
+| Migration-ready (Clean)      | 276       |
+| Rejected (needs HR decision) | 15        |
+| Fixes and rejections logged  | 673       |
+| **Data Quality Score**       | **92.0%** |
+
+Check: 276 clean + 15 rejected + 9 duplicates = 300.
+Data Quality Score = clean rows ÷ source records.
 
 Every exception was documented and traceable instead of being silently loaded.
 
 ## Key Deliverables
 
-- `scripts/02_clean.py` – Full data cleansing & validation pipeline
+- `scripts/02_clean.py` – Full data cleansing and validation pipeline
 - `output/employee_data_clean.xlsx` – Load-ready data
-- `output/error_log.xlsx` – Complete issue log + rejected rows
+- `output/error_log.xlsx` – Complete issue log and rejected rows
 - `docs/03_data_quality_report.md` – Manager-ready quality report
-- Field Mapping & Value Mapping documents
+- Field mapping and value mapping documents – see the `docs/` folder
 
 ## Recommendations
 
@@ -62,5 +68,8 @@ Every exception was documented and traceable instead of being silently loaded.
 ## How to Run
 
 ```bash
-cd hcm_data-migration
+git clone https://github.com/saiprasadchandapuram/hcm-data-migration.git
+cd hcm-data-migration
+pip install pandas openpyxl
 python scripts/02_clean.py
+```
