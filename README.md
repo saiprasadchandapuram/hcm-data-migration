@@ -34,12 +34,13 @@ If this data had been loaded as-is, the go-live would have failed. Oracle reject
 
 ## Results
 
-| Metric                        | Value      |
-|------------------------------|------------|
-| Total source records         | 300        |
-| Migration-ready (Clean)      | 247        |
-| Rejected / needs decision    | 53         |
-| **Data Quality Score**       | **82.3%**  |
+| Metric                  | Value     |
+|-------------------------|-----------|
+| Source records          | 300       |
+| Migration-ready (Clean) | 276       |
+| Rejected                | 15        |
+| Issues logged           | 673       |
+| **Data Quality Score**  | **92.0%** |
 
 Every exception was documented and traceable instead of being silently loaded.
 
